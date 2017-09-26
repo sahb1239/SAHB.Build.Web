@@ -1,0 +1,3 @@
+[submodule "ComposeRemoval"]
+	path = ComposeRemoval
+	url = https://github.com/sahb1239/SAHB.Build.DockerComposeRemoval.git
