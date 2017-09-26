@@ -10,9 +10,18 @@ var nugetSources = new[] {"https://nuget.sahbdev.dk/nuget", "https://api.nuget.o
 // ARGUMENTS
 //////////////////////////////////////////////////////////////////////
 
+var removeCompose = Argument("removeCompose", "0");
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
 var sln = Argument("sln", "");
+
+//////////////////////////////////////////////////////////////////////
+// Clenup build
+//////////////////////////////////////////////////////////////////////
+if (System.IO.Directory.GetFiles("..", "*.compose_build.sln").Any())
+{
+	System.IO.File.Delete(System.IO.Directory.GetFiles("..", "*.compose_build.sln").First());
+}
 
 //////////////////////////////////////////////////////////////////////
 // Solution
@@ -20,6 +29,25 @@ var sln = Argument("sln", "");
 
 if (string.IsNullOrEmpty(sln)) {
 	sln = System.IO.Directory.GetFiles("..", "*.sln")[0];
+}
+
+//////////////////////////////////////////////////////////////////////
+// Remove Compose
+//////////////////////////////////////////////////////////////////////
+
+if (removeCompose == "1") {
+	using(var process = StartAndReturnProcess("BuildComposeRemoval.cmd", new ProcessSettings { RedirectStandardOutput = true })) {
+		process.WaitForExit();
+	}
+	
+	var slnWithBuild = sln.Replace(".sln", ".compose_build.sln");
+	using(var process = StartAndReturnProcess("dotnet", new ProcessSettings { Arguments = "run --project ComposeRemoval/src/DockerComposeBuild/DockerComposeBuild.csproj \"" + sln + "\" \"" + slnWithBuild + "\"", RedirectStandardOutput = true })) {
+		process.WaitForExit();
+		foreach (var info in process.GetStandardOutput())
+			Information(info);
+	}
+	
+	sln = slnWithBuild;
 }
 
 //////////////////////////////////////////////////////////////////////
